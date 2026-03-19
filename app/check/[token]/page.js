@@ -1,31 +1,67 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { use } from 'react'
-import { supabase } from '../../../lib/supabase'
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
-export default function CheckReply({ params }) {
-  const { token } = use(params)
-  const [reply, setReply] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+export default function Home() {
+  const [username, setUsername] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [createdUsername, setCreatedUsername] = useState('')
 
-  useEffect(() => {
-    async function fetchReply() {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('content, replies(*)')
-        .eq('reply_token', token)
-        .single()
+  async function handleSignUp() {
+    setLoading(true)
+    setMessage('')
+    setIsError(false)
+    setSuccess(false)
 
-      if (error || !data) {
-        setNotFound(true)
-      } else {
-        setReply(data)
-      }
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single()
+
+    if (existing) {
+      setMessage('❌ Username already taken, try another')
+      setIsError(true)
       setLoading(false)
+      return
     }
-    fetchReply()
-  }, [token])
+
+    const random = Math.random().toString(36).substring(2, 10)
+    const email = `${username}_${random}@spill.app`
+    const password = `spill_${random}_${username}`
+
+    const { data, error } = await supabase.auth.signUp({ email, password })
+
+    if (error) {
+      setMessage('❌ Error: ' + error.message)
+      setIsError(true)
+      setLoading(false)
+      return
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({ id: data.user.id, username })
+
+    if (profileError) {
+      setMessage('❌ Error: ' + profileError.message)
+      setIsError(true)
+    } else {
+      localStorage.setItem('spill_email', email)
+      localStorage.setItem('spill_password', password)
+      localStorage.setItem('spill_username', username)
+      setCreatedUsername(username)
+      setSuccess(true)
+    }
+
+    setLoading(false)
+  }
+
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  const shareLink = `${siteUrl}/u/${createdUsername}`
 
   return (
     <main style={{
@@ -37,69 +73,193 @@ export default function CheckReply({ params }) {
       fontFamily: "'Segoe UI', sans-serif"
     }}>
       <div style={{ width: '100%', maxWidth: 460, padding: 24, textAlign: 'center' }}>
-        <span style={{
-          fontSize: 48,
-          fontWeight: 900,
-          background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>SPILL</span>
 
-        <div style={{
-          background: '#1a1a2e',
-          border: '1px solid #2a2a4a',
-          borderRadius: 16,
-          padding: 32,
-          marginTop: 24
-        }}>
-          {loading ? (
-            <p style={{ color: '#888' }}>Checking for reply...</p>
-          ) : notFound ? (
-            <div>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👻</div>
-              <p style={{ color: '#888' }}>Message not found</p>
-            </div>
-          ) : (
-            <div>
-              <div style={{
-                background: '#0f0f1a',
-                borderRadius: 10,
-                padding: 16,
-                marginBottom: 20,
-                textAlign: 'left'
-              }}>
-                <p style={{ color: '#666', fontSize: 12, margin: '0 0 6px' }}>Your message</p>
-                <p style={{ color: '#aaa', fontSize: 14, margin: 0 }}>{reply.content}</p>
-              </div>
-
-              {reply.replies?.length > 0 ? (
-                <div>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-                  <p style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>They replied!</p>
-                  <div style={{
-                    background: '#0f0f1a',
-                    borderLeft: '3px solid #8b5cf6',
-                    borderRadius: 10,
-                    padding: 16,
-                    textAlign: 'left'
-                  }}>
-                    <p style={{ color: '#c4b5fd', fontSize: 15, margin: 0 }}>
-                      {reply.replies[0].content}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
-                  <p style={{ color: '#888', fontSize: 14 }}>No reply yet. Check back later!</p>
-                </div>
-              )}
-            </div>
-          )}
+        <div style={{ marginBottom: 8 }}>
+          <span style={{
+            fontSize: 64,
+            fontWeight: 900,
+            background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            SPILL
+          </span>
         </div>
 
+        <p style={{ color: '#888', fontSize: 16, marginBottom: 40 }}>
+          send & receive anonymous messages 👀
+        </p>
+
+        {!success ? (
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid #2a2a4a',
+            borderRadius: 16,
+            padding: 32
+          }}>
+            <p style={{ color: '#aaa', marginBottom: 16, fontSize: 14 }}>
+              Choose your username to get your personal link
+            </p>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#0f0f1a',
+              border: '1px solid #333',
+              borderRadius: 10,
+              padding: '0 16px',
+              marginBottom: 16
+            }}>
+              <span style={{ color: '#555', fontSize: 15 }}>spill/u/</span>
+              <input
+                type="text"
+                placeholder="yourname"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                style={{
+                  flex: 1,
+                  padding: '14px 8px',
+                  fontSize: 15,
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#fff',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <button
+              onClick={handleSignUp}
+              disabled={loading || !username}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                fontSize: 16,
+                fontWeight: 700,
+                borderRadius: 10,
+                border: 'none',
+                background: username
+                  ? 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)'
+                  : '#2a2a4a',
+                color: '#fff',
+                cursor: username ? 'pointer' : 'not-allowed',
+                letterSpacing: 1
+              }}
+            >
+              {loading ? 'Creating...' : 'GET MY LINK 🔗'}
+            </button>
+
+            {message && (
+              <div style={{
+                marginTop: 20,
+                padding: 14,
+                borderRadius: 10,
+                background: '#0f0f1a',
+                border: `1px solid ${isError ? '#ef4444' : '#8b5cf6'}`,
+                color: isError ? '#fca5a5' : '#c4b5fd',
+                fontSize: 14
+              }}>
+                {message}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* SUCCESS SCREEN */
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid #2a2a4a',
+            borderRadius: 16,
+            padding: 32
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+            <h3 style={{ color: '#fff', margin: '0 0 8px' }}>
+              Your link is ready!
+            </h3>
+            <p style={{ color: '#888', fontSize: 14, marginBottom: 24 }}>
+              Share it and start receiving anonymous messages
+            </p>
+
+            {/* Link box */}
+            <div style={{
+              background: '#0f0f1a',
+              border: '1px solid #333',
+              borderRadius: 10,
+              padding: '14px 16px',
+              marginBottom: 12,
+              wordBreak: 'break-all',
+              fontSize: 13,
+              color: '#c4b5fd',
+              textAlign: 'left'
+            }}>
+              {shareLink}
+            </div>
+
+            {/* Copy button */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(shareLink)
+                alert('Link copied! 🔗 Share it everywhere!')
+              }}
+              style={{
+                width: '100%',
+                padding: '13px 16px',
+                fontSize: 15,
+                fontWeight: 700,
+                borderRadius: 10,
+                border: 'none',
+                background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
+                color: '#fff',
+                cursor: 'pointer',
+                marginBottom: 12
+              }}
+            >
+              Copy Link 🔗
+            </button>
+
+            {/* Share on WhatsApp */}
+            <button
+              onClick={() => {
+                const text = `Send me an anonymous message on SPILL 👀🌶️ ${shareLink}`
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+              }}
+              style={{
+                width: '100%',
+                padding: '13px 16px',
+                fontSize: 15,
+                fontWeight: 700,
+                borderRadius: 10,
+                border: 'none',
+                background: '#25D366',
+                color: '#fff',
+                cursor: 'pointer',
+                marginBottom: 12
+              }}
+            >
+              Share on WhatsApp 💬
+            </button>
+
+            {/* Go to inbox */}
+            <button
+              onClick={() => window.location.href = '/inbox'}
+              style={{
+                width: '100%',
+                padding: '13px 16px',
+                fontSize: 15,
+                fontWeight: 600,
+                borderRadius: 10,
+                border: '1px solid #8b5cf6',
+                background: 'transparent',
+                color: '#c4b5fd',
+                cursor: 'pointer'
+              }}
+            >
+              Go to my inbox 📬
+            </button>
+          </div>
+        )}
+
         <p style={{ color: '#444', fontSize: 12, marginTop: 24 }}>
-          100% anonymous · powered by SPILL
+          no login needed to send a message · 100% anonymous
         </p>
       </div>
     </main>
