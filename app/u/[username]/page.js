@@ -27,7 +27,7 @@ export default function UserPage({ params }) {
     }
     fetchProfile()
   }, [username])
-  
+
   async function handleSend() {
     if (!message.trim()) return
     setLoading(true)
@@ -44,7 +44,7 @@ export default function UserPage({ params }) {
     if (error) {
       alert('Error sending: ' + error.message)
     } else {
-      localStorage.setItem('reply_token_' + data.reply_token, data.reply_token)
+      localStorage.setItem('last_reply_token', data.reply_token)
       setSent(true)
     }
     setLoading(false)
@@ -176,10 +176,37 @@ export default function UserPage({ params }) {
               <p style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
                 They have no idea it was you 😏
               </p>
+
+              <button
+                onClick={() => {
+                  const token = localStorage.getItem('last_reply_token')
+                  if (token) {
+                    window.location.href = `/check/${token}`
+                  } else {
+                    alert('Token not found, try again')
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '13px 16px',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  marginBottom: 12
+                }}
+              >
+                Check for reply 💬
+              </button>
+
               <button
                 onClick={() => { setMessage(''); setSent(false) }}
                 style={{
-                  padding: '10px 24px',
+                  width: '100%',
+                  padding: '13px 16px',
                   borderRadius: 10,
                   border: '1px solid #8b5cf6',
                   background: 'transparent',
