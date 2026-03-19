@@ -1,88 +1,107 @@
 'use client'
-import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { use } from 'react'
+import { supabase } from '../../../lib/supabase'
 
-export default function Home() {
-  const [username, setUsername] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+export default function CheckReply({ params }) {
+  const { token } = use(params)
+  const [reply, setReply] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
-  async function handleSignUp() {
-    setLoading(true)
-    setMessage('')
+  useEffect(() => {
+    async function fetchReply() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('content, replies(*)')
+        .eq('reply_token', token)
+        .single()
 
-    const email = `${username}@anonapp.com`
-    const password = 'defaultpassword123'
-
-    const { data, error } = await supabase.auth.signUp({ email, password })
-
-    if (error) {
-      setMessage('Error: ' + error.message)
+      if (error || !data) {
+        setNotFound(true)
+      } else {
+        setReply(data)
+      }
       setLoading(false)
-      return
     }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({ id: data.user.id, username })
-
-    if (profileError) {
-      setMessage('Error: ' + profileError.message)
-    } else {
-      setMessage('Account created! Your link is: anonapp.com/u/' + username)
-    }
-
-    setLoading(false)
-  }
+    fetchReply()
+  }, [token])
 
   return (
-    <main style={{ maxWidth: 500, margin: '80px auto', padding: 24 }}>
-      <h1 style={{ fontSize: 32, fontWeight: 700 }}>AnonApp</h1>
-      <p style={{ color: '#888', marginBottom: 32 }}>
-        Get anonymous messages from anyone
-      </p>
+    <main style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 50%, #0f0f0f 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: "'Segoe UI', sans-serif"
+    }}>
+      <div style={{ width: '100%', maxWidth: 460, padding: 24, textAlign: 'center' }}>
+        <span style={{
+          fontSize: 48,
+          fontWeight: 900,
+          background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>SPILL</span>
 
-      <input
-        type="text"
-        placeholder="Choose a username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '12px 16px',
-          fontSize: 16,
-          borderRadius: 8,
-          border: '1px solid #333',
-          background: '#111',
-          color: '#fff',
-          marginBottom: 12,
-          boxSizing: 'border-box'
-        }}
-      />
+        <div style={{
+          background: '#1a1a2e',
+          border: '1px solid #2a2a4a',
+          borderRadius: 16,
+          padding: 32,
+          marginTop: 24
+        }}>
+          {loading ? (
+            <p style={{ color: '#888' }}>Checking for reply...</p>
+          ) : notFound ? (
+            <div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👻</div>
+              <p style={{ color: '#888' }}>Message not found</p>
+            </div>
+          ) : (
+            <div>
+              <div style={{
+                background: '#0f0f1a',
+                borderRadius: 10,
+                padding: 16,
+                marginBottom: 20,
+                textAlign: 'left'
+              }}>
+                <p style={{ color: '#666', fontSize: 12, margin: '0 0 6px' }}>Your message</p>
+                <p style={{ color: '#aaa', fontSize: 14, margin: 0 }}>{reply.content}</p>
+              </div>
 
-      <button
-        onClick={handleSignUp}
-        disabled={loading || !username}
-        style={{
-          width: '100%',
-          padding: '12px 16px',
-          fontSize: 16,
-          fontWeight: 600,
-          borderRadius: 8,
-          border: 'none',
-          background: username ? '#7c3aed' : '#333',
-          color: '#fff',
-          cursor: username ? 'pointer' : 'not-allowed'
-        }}
-      >
-        {loading ? 'Creating...' : 'Create My Link'}
-      </button>
+              {reply.replies?.length > 0 ? (
+                <div>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
+                  <p style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>They replied!</p>
+                  <div style={{
+                    background: '#0f0f1a',
+                    borderLeft: '3px solid #8b5cf6',
+                    borderRadius: 10,
+                    padding: 16,
+                    textAlign: 'left'
+                  }}>
+                    <p style={{ color: '#c4b5fd', fontSize: 15, margin: 0 }}>
+                      {reply.replies[0].content}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+                  <p style={{ color: '#888', fontSize: 14 }}>No reply yet. Check back later!</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-      {message && (
-        <p style={{ marginTop: 16, color: '#7c3aed', fontWeight: 500 }}>
-          {message}
+        <p style={{ color: '#444', fontSize: 12, marginTop: 24 }}>
+          100% anonymous · powered by SPILL
         </p>
-      )}
+      </div>
     </main>
   )
 }
