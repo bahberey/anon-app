@@ -10,6 +10,8 @@ export default function UserPage({ params }) {
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [showInboxModal, setShowInboxModal] = useState(false)
+  const [inboxUsername, setInboxUsername] = useState('')
 
   useEffect(() => {
     async function fetchProfile() {
@@ -50,6 +52,11 @@ export default function UserPage({ params }) {
     setLoading(false)
   }
 
+  function handleInboxAccess() {
+    if (!inboxUsername.trim()) return
+    window.location.href = `/inbox?user=${inboxUsername.trim().toLowerCase()}`
+  }
+
   if (notFound) return (
     <main style={{
       minHeight: '100vh',
@@ -86,20 +93,132 @@ export default function UserPage({ params }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: "'Segoe UI', sans-serif"
+      fontFamily: "'Segoe UI', sans-serif",
+      padding: '24px 16px'
     }}>
-      <div style={{ width: '100%', maxWidth: 460, padding: 24, textAlign: 'center' }}>
 
-        <span style={{
-          fontSize: 36,
-          fontWeight: 900,
-          background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+      {/* Inbox Modal */}
+      {showInboxModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: 24
         }}>
-          SPILL
-        </span>
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid #2a2a4a',
+            borderRadius: 16,
+            padding: 32,
+            width: '100%',
+            maxWidth: 400,
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: '#fff', margin: '0 0 8px' }}>Access your inbox 📬</h3>
+            <p style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
+              Enter your username to go to your inbox
+            </p>
 
+            <input
+              type="text"
+              placeholder="your username"
+              value={inboxUsername}
+              onChange={(e) => setInboxUsername(e.target.value.toLowerCase())}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: 15,
+                borderRadius: 10,
+                border: '1px solid #333',
+                background: '#0f0f1a',
+                color: '#fff',
+                outline: 'none',
+                marginBottom: 12,
+                boxSizing: 'border-box'
+              }}
+            />
+
+            <button
+              onClick={handleInboxAccess}
+              disabled={!inboxUsername.trim()}
+              style={{
+                width: '100%',
+                padding: '13px 16px',
+                fontSize: 15,
+                fontWeight: 700,
+                borderRadius: 10,
+                border: 'none',
+                background: inboxUsername.trim()
+                  ? 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)'
+                  : '#2a2a4a',
+                color: '#fff',
+                cursor: inboxUsername.trim() ? 'pointer' : 'not-allowed',
+                marginBottom: 12
+              }}
+            >
+              Go to my inbox 📬
+            </button>
+
+            <button
+              onClick={() => setShowInboxModal(false)}
+              style={{
+                width: '100%',
+                padding: '11px 16px',
+                borderRadius: 10,
+                border: '1px solid #333',
+                background: 'transparent',
+                color: '#666',
+                cursor: 'pointer',
+                fontSize: 14
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ width: '100%', maxWidth: 460, textAlign: 'center' }}>
+
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24
+        }}>
+          <span style={{
+            fontSize: 32,
+            fontWeight: 900,
+            background: 'linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            SPILL
+          </span>
+
+          <button
+            onClick={() => setShowInboxModal(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 20,
+              border: '1px solid #8b5cf6',
+              background: 'transparent',
+              color: '#c4b5fd',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600
+            }}
+          >
+            My Inbox 📬
+          </button>
+        </div>
+
+        {/* Profile */}
         <div style={{ margin: '24px 0' }}>
           <div style={{
             width: 72,
@@ -120,6 +239,7 @@ export default function UserPage({ params }) {
           <p style={{ color: '#666', fontSize: 14 }}>send an anonymous message 👇</p>
         </div>
 
+        {/* Message card */}
         <div style={{
           background: '#1a1a2e',
           border: '1px solid #2a2a4a',
