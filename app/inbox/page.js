@@ -40,7 +40,7 @@ export default function Inbox() {
     checkSession()
   }, [])
 
-  async function checkSession() {
+async function checkSession() {
     const savedEmail = localStorage.getItem('spill_email')
     const savedPassword = localStorage.getItem('spill_password')
     const savedUsername = localStorage.getItem('spill_username')
@@ -53,12 +53,35 @@ export default function Inbox() {
       if (!error) {
         setUser(data.user)
         setUsername(savedUsername)
-        requestNotificationPermission(data.user.id)
         fetchMessages(data.user.id)
+        setupNotifications(data.user.id)
         return
       }
     }
     setLoading(false)
+  }
+
+  async function setupNotifications(userId) {
+    if (!('Notification' in window)) return
+
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
+
+    supabase
+      .channel('inbox-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `recipient_id=eq.${userId}`
+      }, (payload) => {
+        new Notification('New message on SPILL! 🌶️', {
+          body: 'Someone just sent you an anonymous message 👀',
+          icon: '/favicon.ico'
+        })
+        fetchMessages(userId)
+      })
+      .subscribe()
   }
 
   async function fetchMessages(userId) {
