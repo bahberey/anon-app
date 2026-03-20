@@ -97,7 +97,6 @@ export default function UserPage({ params }) {
       padding: '24px 16px'
     }}>
 
-      {/* Inbox Modal */}
       {showInboxModal && (
         <div style={{
           position: 'fixed',
@@ -122,7 +121,6 @@ export default function UserPage({ params }) {
             <p style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
               Enter your username to go to your inbox
             </p>
-
             <input
               type="text"
               placeholder="your username"
@@ -141,7 +139,6 @@ export default function UserPage({ params }) {
                 boxSizing: 'border-box'
               }}
             />
-
             <button
               onClick={handleInboxAccess}
               disabled={!inboxUsername.trim()}
@@ -162,7 +159,6 @@ export default function UserPage({ params }) {
             >
               Go to my inbox 📬
             </button>
-
             <button
               onClick={() => setShowInboxModal(false)}
               style={{
@@ -184,7 +180,6 @@ export default function UserPage({ params }) {
 
       <div style={{ width: '100%', maxWidth: 460, textAlign: 'center' }}>
 
-        {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -200,7 +195,6 @@ export default function UserPage({ params }) {
           }}>
             SPILL
           </span>
-
           <button
             onClick={() => setShowInboxModal(true)}
             style={{
@@ -218,7 +212,6 @@ export default function UserPage({ params }) {
           </button>
         </div>
 
-        {/* Profile */}
         <div style={{ margin: '24px 0' }}>
           <div style={{
             width: 72,
@@ -236,21 +229,22 @@ export default function UserPage({ params }) {
             {profile.username[0].toUpperCase()}
           </div>
           <h2 style={{ color: '#fff', margin: 0 }}>@{profile.username}</h2>
-            <p style={{ color: '#666', fontSize: 14 }}>send an anonymous message 👇</p>
-            <div style={{
+          <p style={{ color: '#666', fontSize: 14, margin: '4px 0 8px' }}>
+            send an anonymous message 👇
+          </p>
+          <div style={{
             display: 'inline-block',
-            marginTop: 8,
             padding: '4px 14px',
             borderRadius: 20,
             background: '#1a1a2e',
             border: '1px solid #2a2a4a',
             color: '#888',
             fontSize: 13
-        }}>
+          }}>
             💬 {profile.message_count || 0} messages received
+          </div>
         </div>
 
-        {/* Message card */}
         <div style={{
           background: '#1a1a2e',
           border: '1px solid #2a2a4a',
@@ -307,7 +301,6 @@ export default function UserPage({ params }) {
               <p style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
                 They have no idea it was you 😏
               </p>
-
               <button
                 onClick={() => {
                   const token = localStorage.getItem('last_reply_token')
@@ -332,7 +325,6 @@ export default function UserPage({ params }) {
               >
                 Check for reply 💬
               </button>
-
               <button
                 onClick={() => { setMessage(''); setSent(false) }}
                 style={{
