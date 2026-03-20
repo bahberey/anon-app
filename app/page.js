@@ -22,9 +22,9 @@ export default function Home() {
       return
     }
 
-    const { error: profileError } = await supabase
+   const { error: profileError } = await supabase
       .from('profiles')
-      .insert({ id: data.user.id, username })
+      .insert({ id: data.user.id, username, email, password })
 
     if (profileError) {
       setMessage('Error: ' + profileError.message)

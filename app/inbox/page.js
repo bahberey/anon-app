@@ -8,39 +8,14 @@ export default function Inbox() {
   const [user, setUser] = useState(null)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [replyText, setReplyText] = useState({})
   const [loginError, setLoginError] = useState('')
-
-  async function requestNotificationPermission(userId) {
-  if (!('Notification' in window)) return
-  
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') return
-
-  // Subscribe to Supabase realtime for new messages
-  supabase
-    .channel('new-messages')
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `recipient_id=eq.${userId}`
-    }, (payload) => {
-      new Notification('New message on SPILL! 🌶️', {
-        body: 'Someone just sent you an anonymous message',
-        icon: '/favicon.ico'
-      })
-      fetchMessages(userId)
-    })
-    .subscribe()
-}
 
   useEffect(() => {
     checkSession()
   }, [])
 
-async function checkSession() {
+  async function checkSession() {
     const savedEmail = localStorage.getItem('spill_email')
     const savedPassword = localStorage.getItem('spill_password')
     const savedUsername = localStorage.getItem('spill_username')
@@ -63,7 +38,6 @@ async function checkSession() {
 
   async function setupNotifications(userId) {
     if (!('Notification' in window)) return
-
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return
 
@@ -74,7 +48,7 @@ async function checkSession() {
         schema: 'public',
         table: 'messages',
         filter: `recipient_id=eq.${userId}`
-      }, (payload) => {
+      }, () => {
         new Notification('New message on SPILL! 🌶️', {
           body: 'Someone just sent you an anonymous message 👀',
           icon: '/favicon.ico'
@@ -107,29 +81,29 @@ async function checkSession() {
       .single()
 
     if (profileError || !profile) {
-      setLoginError('Username not found')
+      setLoginError('❌ Username not found')
       return
     }
 
-    const savedEmail = localStorage.getItem('spill_email')
-    const savedPassword = localStorage.getItem('spill_password')
-    const savedUsername = localStorage.getItem('spill_username')
-
-    if (savedUsername === usernameInput && savedEmail && savedPassword) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: savedEmail,
-        password: savedPassword
-      })
-      if (!error) {
-        setUser(data.user)
-        setUsername(usernameInput)
-        fetchMessages(data.user.id)
-        setupNotifications(data.user.id)
-        return
-      }
+    if (!profile.email || !profile.password) {
+      setLoginError('❌ Account not found. Try from the device you signed up on.')
+      return
     }
 
-    setLoginError('Could not log in. Try from the device you signed up on.')
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: profile.password
+    })
+
+    if (error) {
+      setLoginError('❌ Could not log in, try again')
+      return
+    }
+
+    setUser(data.user)
+    setUsername(usernameInput)
+    fetchMessages(data.user.id)
+    setupNotifications(data.user.id)
   }
 
   async function handleReply(messageId) {
@@ -157,12 +131,15 @@ async function checkSession() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    localStorage.removeItem('spill_email')
+    localStorage.removeItem('spill_password')
+    localStorage.removeItem('spill_username')
     setUser(null)
     setMessages([])
   }
 
   // LOGIN SCREEN
-if (!user) return (
+  if (!user) return (
     <main style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 50%, #0f0f0f 100%)',
@@ -194,7 +171,7 @@ if (!user) return (
 
           <input
             type="text"
-            placeholder="your username"
+            placeholder="Your username"
             value={email}
             onChange={(e) => setEmail(e.target.value.toLowerCase())}
             style={{
@@ -246,7 +223,6 @@ if (!user) return (
     }}>
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -280,7 +256,6 @@ if (!user) return (
           </div>
         </div>
 
-        {/* Share link banner */}
         <div style={{
           background: '#1a1a2e',
           border: '1px solid #2a2a4a',
@@ -294,7 +269,7 @@ if (!user) return (
           <div>
             <p style={{ color: '#888', fontSize: 12, margin: '0 0 4px' }}>Your shareable link</p>
             <p style={{ color: '#c4b5fd', fontSize: 14, margin: 0 }}>
-              spill.app/u/{username}
+              {typeof window !== 'undefined' ? window.location.origin : ''}/u/{username}
             </p>
           </div>
           <button
@@ -317,7 +292,6 @@ if (!user) return (
           </button>
         </div>
 
-        {/* Messages */}
         <h3 style={{ color: '#fff', marginBottom: 16 }}>
           📬 {messages.length} message{messages.length !== 1 ? 's' : ''}
         </h3>
@@ -352,7 +326,6 @@ if (!user) return (
                 {new Date(msg.created_at).toLocaleString()}
               </p>
 
-              {/* Show reply if exists */}
               {msg.replies?.length > 0 && (
                 <div style={{
                   background: '#0f0f1a',
@@ -368,7 +341,6 @@ if (!user) return (
                 </div>
               )}
 
-              {/* Reply box */}
               {!msg.replies?.length && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input
@@ -405,8 +377,7 @@ if (!user) return (
                 </div>
               )}
 
-              {/* Report button */}
-              {!msg.reported && (
+              {!msg.reported ? (
                 <button
                   onClick={() => handleReport(msg.id)}
                   style={{
@@ -421,9 +392,7 @@ if (!user) return (
                 >
                   🚩 Report
                 </button>
-              )}
-
-              {msg.reported && (
+              ) : (
                 <span style={{ color: '#666', fontSize: 11 }}>🚩 Reported</span>
               )}
             </div>
