@@ -236,7 +236,18 @@ export default function UserPage({ params }) {
             {profile.username[0].toUpperCase()}
           </div>
           <h2 style={{ color: '#fff', margin: 0 }}>@{profile.username}</h2>
-          <p style={{ color: '#666', fontSize: 14 }}>send an anonymous message 👇</p>
+            <p style={{ color: '#666', fontSize: 14 }}>send an anonymous message 👇</p>
+            <div style={{
+            display: 'inline-block',
+            marginTop: 8,
+            padding: '4px 14px',
+            borderRadius: 20,
+            background: '#1a1a2e',
+            border: '1px solid #2a2a4a',
+            color: '#888',
+            fontSize: 13
+        }}>
+            💬 {profile.message_count || 0} messages received
         </div>
 
         {/* Message card */}

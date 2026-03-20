@@ -12,6 +12,30 @@ export default function Inbox() {
   const [replyText, setReplyText] = useState({})
   const [loginError, setLoginError] = useState('')
 
+  async function requestNotificationPermission(userId) {
+  if (!('Notification' in window)) return
+  
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') return
+
+  // Subscribe to Supabase realtime for new messages
+  supabase
+    .channel('new-messages')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `recipient_id=eq.${userId}`
+    }, (payload) => {
+      new Notification('New message on SPILL! 🌶️', {
+        body: 'Someone just sent you an anonymous message',
+        icon: '/favicon.ico'
+      })
+      fetchMessages(userId)
+    })
+    .subscribe()
+}
+
   useEffect(() => {
     checkSession()
   }, [])
@@ -29,6 +53,7 @@ export default function Inbox() {
       if (!error) {
         setUser(data.user)
         setUsername(savedUsername)
+        requestNotificationPermission(data.user.id)
         fetchMessages(data.user.id)
         return
       }
