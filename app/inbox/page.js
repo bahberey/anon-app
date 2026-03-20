@@ -97,17 +97,39 @@ async function checkSession() {
 
   async function handleLogin() {
     setLoginError('')
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email, password
-    })
-    if (error) {
-      setLoginError('Wrong email or password')
+
+    const usernameInput = email.trim()
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', usernameInput)
+      .single()
+
+    if (profileError || !profile) {
+      setLoginError('Username not found')
       return
     }
+
+    const savedEmail = localStorage.getItem('spill_email')
+    const savedPassword = localStorage.getItem('spill_password')
     const savedUsername = localStorage.getItem('spill_username')
-    setUser(data.user)
-    setUsername(savedUsername)
-    fetchMessages(data.user.id)
+
+    if (savedUsername === usernameInput && savedEmail && savedPassword) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: savedEmail,
+        password: savedPassword
+      })
+      if (!error) {
+        setUser(data.user)
+        setUsername(usernameInput)
+        fetchMessages(data.user.id)
+        setupNotifications(data.user.id)
+        return
+      }
+    }
+
+    setLoginError('Could not log in. Try from the device you signed up on.')
   }
 
   async function handleReply(messageId) {
@@ -140,7 +162,7 @@ async function checkSession() {
   }
 
   // LOGIN SCREEN
-  if (!user) return (
+if (!user) return (
     <main style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 50%, #0f0f0f 100%)',
@@ -166,30 +188,15 @@ async function checkSession() {
           marginTop: 24
         }}>
           <h2 style={{ color: '#fff', marginTop: 0 }}>Login to your inbox</h2>
+          <p style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
+            Enter the username you created
+          </p>
 
           <input
-            type="email"
-            placeholder="Email"
+            type="text"
+            placeholder="your username"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              fontSize: 15,
-              borderRadius: 10,
-              border: '1px solid #333',
-              background: '#0f0f1a',
-              color: '#fff',
-              outline: 'none',
-              marginBottom: 12,
-              boxSizing: 'border-box'
-            }}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.toLowerCase())}
             style={{
               width: '100%',
               padding: '12px 16px',
